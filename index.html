@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secured Interactive Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease; }
+        .tab-violation { background-color: #fee2e2; }
+        .timer-warning { color: #ef4444; animation: pulse 1s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col items-center p-4">
+
+    <!-- Header / Stats Bar -->
+    <div id="stats-bar" class="w-full max-w-3xl bg-white shadow-sm rounded-xl p-4 mb-6 flex justify-between items-center sticky top-4 z-10 border border-slate-200">
+        <div class="flex gap-4">
+            <div class="text-xs uppercase font-bold text-slate-500">Reloads: <span id="reload-count" class="text-red-600">0</span></div>
+            <div class="text-xs uppercase font-bold text-slate-500">Violations: <span id="violation-count" class="text-red-600">0</span></div>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-xs uppercase font-bold text-slate-400">Time Remaining:</span>
+            <div id="timer" class="text-lg font-mono font-bold text-blue-600">20:00</div>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main id="app-container" class="w-full max-w-3xl bg-white shadow-xl rounded-2xl p-8 border border-slate-100">
+        
+        <!-- Welcome Screen -->
+        <div id="setup-screen" class="space-y-6">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-slate-800">Final Assessment</h1>
+                <p class="text-slate-500 mt-2">Total Points: 30 | Time Limit: 20 Minutes</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                    <input type="text" id="student-name" placeholder="John Doe" class="w-full p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Student ID</label>
+                    <input type="text" id="student-id" placeholder="2024-0001" class="w-full p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+            </div>
+
+            <div class="bg-amber-50 border-l-4 border-amber-400 p-4 text-sm text-amber-800">
+                <p class="font-bold mb-1">Important Rules:</p>
+                <ul class="list-disc ml-5 space-y-1">
+                    <li>You have exactly 20 minutes to complete the quiz.</li>
+                    <li>Leaving the tab or opening other windows will be recorded as a violation.</li>
+                    <li>Refreshing the page will increment your reload counter.</li>
+                    <li>The quiz will auto-submit when the timer reaches zero.</li>
+                </ul>
+            </div>
+
+            <button onclick="startQuiz()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98]">
+                Start Examination
+            </button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden">
+            <div class="mb-6">
+                <div class="flex justify-between text-sm text-slate-400 mb-2">
+                    <span id="progress-text">Question 1 of 15</span>
+                    <span id="score-tracking">Current Score: 0/30</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div id="question-container" class="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <!-- Question will be injected here -->
+            </div>
+
+            <div class="mt-8 flex justify-between">
+                <button id="next-btn" onclick="handleNext()" class="ml-auto bg-slate-800 hover:bg-black text-white px-8 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50">
+                    Next Question
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden text-center space-y-6">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 text-green-600 rounded-full mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800">Examination Completed</h2>
+            <p class="text-slate-500">Your results have been processed and secured.</p>
+            
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 grid grid-cols-2 gap-4 text-left">
+                <div>
+                    <p class="text-xs text-slate-400 uppercase font-bold">Raw Score</p>
+                    <p id="final-score" class="text-xl font-bold text-slate-800">0 / 30</p>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 uppercase font-bold">Accuracy</p>
+                    <p id="final-percent" class="text-xl font-bold text-slate-800">0%</p>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 uppercase font-bold">Violations</p>
+                    <p id="final-violations" class="text-xl font-bold text-red-500">0</p>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 uppercase font-bold">Reloads</p>
+                    <p id="final-reloads" class="text-xl font-bold text-slate-800">0</p>
+                </div>
+            </div>
+
+            <div class="space-y-3 pt-4">
+                <button onclick="downloadResults()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Download Encrypted Results
+                </button>
+                <p class="text-xs text-slate-400 italic">Submit the downloaded file to your instructor for verification.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- QUIZ DATA (15 Questions @ 2pts each = 30 pts) ---
+        const questions = [
+            { q: "What is the primary function of a Firewall?", a: ["Data Compression", "Security Filtering", "Power Management", "Hard Drive Storage"], correct: 1 },
+            { q: "Which protocol is used for secure web browsing?", a: ["HTTP", "FTP", "HTTPS", "SMTP"], correct: 2 },
+            { q: "What does RAM stand for?", a: ["Random Access Memory", "Read Always Mode", "Rapid Action Module", "Real-time Access Media"], correct: 0 },
+            { q: "In programming, what is a 'Bug'?", a: ["A physical insect", "An error in code", "A hardware feature", "A virus"], correct: 1 },
+            { q: "Which company developed the Java language?", a: ["Microsoft", "Apple", "Sun Microsystems", "Google"], correct: 2 },
+            { q: "What is the brain of the computer?", a: ["GPU", "RAM", "CPU", "Motherboard"], correct: 2 },
+            { q: "Which is a valid IPv4 address?", a: ["192.168.1.1", "256.0.0.1", "10.10.10.256", "1.2.3.4.5"], correct: 0 },
+            { q: "HTML is used for...", a: ["Styling", "Data processing", "Structure of web pages", "Server logic"], correct: 2 },
+            { q: "What does SQL stand for?", a: ["Simple Query Language", "Structured Query Language", "Secure Quick Link", "System Quality Logic"], correct: 1 },
+            { q: "Which of these is an Operating System?", a: ["Chrome", "Python", "Linux", "Visual Studio"], correct: 2 },
+            { q: "What is 2 + 2 in binary?", a: ["10", "11", "100", "01"], correct: 2 },
+            { q: "Which tag is used for the largest heading in HTML?", a: ["<head>", "<h6>", "<heading>", "<h1>"], correct: 3 },
+            { q: "What is 'Phishing'?", a: ["Catching data packets", "Social engineering to steal info", "Speeding up a network", "Encrypting a file"], correct: 1 },
+            { q: "A kilobyte is equal to how many bytes?", a: ["100", "1000", "1024", "512"], correct: 2 },
+            { q: "What does CPU stand for?", a: ["Central Process Unit", "Core Processing Utility", "Central Processing Unit", "Computer Power User"], correct: 2 }
+        ];
+
+        // --- APP STATE ---
+        const INITIAL_TIME_SECONDS = 20 * 60; // 20 minutes
+        let currentQuestion = 0;
+        let score = 0;
+        let violations = 0;
+        let reloads = 0;
+        let timerSeconds = INITIAL_TIME_SECONDS;
+        let timerInterval;
+        let studentData = { name: '', id: '' };
+
+        // --- MONITORING LOGIC ---
+        
+        // Track reloads using localStorage
+        if (localStorage.getItem('quiz_reloads')) {
+            reloads = parseInt(localStorage.getItem('quiz_reloads')) + 1;
+        } else {
+            reloads = 0;
+        }
+        localStorage.setItem('quiz_reloads', reloads);
+        document.getElementById('reload-count').innerText = reloads;
+
+        // Detect Tab Switch / Window Blur
+        window.onblur = function() {
+            violations++;
+            document.getElementById('violation-count').innerText = violations;
+            document.body.classList.add('tab-violation');
+            console.warn("Violation detected: User left the screen.");
+        };
+
+        window.onfocus = function() {
+            document.body.classList.remove('tab-violation');
+        };
+
+        // --- CORE FUNCTIONS ---
+
+        function startQuiz() {
+            const name = document.getElementById('student-name').value;
+            const sid = document.getElementById('student-id').value;
+
+            if (!name || !sid) {
+                alert("Please fill in your details.");
+                return;
+            }
+
+            studentData.name = name;
+            studentData.id = sid;
+
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            
+            startTimer();
+            renderQuestion();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timerSeconds--;
+                
+                const mins = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+                const secs = String(timerSeconds % 60).padStart(2, '0');
+                const timerEl = document.getElementById('timer');
+                timerEl.innerText = `${mins}:${secs}`;
+
+                // Add warning class when less than 1 minute remains
+                if (timerSeconds <= 60) {
+                    timerEl.classList.add('timer-warning');
+                }
+
+                if (timerSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    alert("Time is up! Your quiz will now be submitted.");
+                    finishQuiz();
+                }
+            }, 1000);
+        }
+
+        function renderQuestion() {
+            const qData = questions[currentQuestion];
+            const container = document.getElementById('question-container');
+            
+            // Update Progress
+            const progress = ((currentQuestion + 1) / questions.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('progress-text').innerText = `Question ${currentQuestion + 1} of ${questions.length}`;
+            document.getElementById('score-tracking').innerText = `Current Score: ${score}/30`;
+
+            container.innerHTML = `
+                <h3 class="text-xl font-semibold text-slate-800 mb-6">${qData.q}</h3>
+                <div class="space-y-3">
+                    ${qData.a.map((option, idx) => `
+                        <label class="flex items-center p-4 border border-slate-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all group">
+                            <input type="radio" name="quiz-opt" value="${idx}" class="w-5 h-5 text-blue-600 border-slate-300 focus:ring-blue-500">
+                            <span class="ml-4 text-slate-700 group-hover:text-blue-800">${option}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function handleNext() {
+            const selected = document.querySelector('input[name="quiz-opt"]:checked');
+            if (!selected) {
+                alert("Please select an answer.");
+                return;
+            }
+
+            // Calculate Score (each question is worth 2 points)
+            if (parseInt(selected.value) === questions[currentQuestion].correct) {
+                score += 2;
+            }
+
+            currentQuestion++;
+
+            if (currentQuestion < questions.length) {
+                renderQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            clearInterval(timerInterval);
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('stats-bar').classList.add('hidden');
+
+            document.getElementById('final-score').innerText = `${score} / 30`;
+            document.getElementById('final-percent').innerText = `${Math.round((score/30)*100)}%`;
+            document.getElementById('final-violations').innerText = violations;
+            document.getElementById('final-reloads').innerText = reloads;
+
+            // Clear reload tracking for next fresh attempt session
+            localStorage.removeItem('quiz_reloads');
+        }
+
+        // --- ENCRYPTION & EXPORT ---
+
+        function encryptData(text) {
+            const b64 = btoa(unescape(encodeURIComponent(text)));
+            return b64.replace(/[a-zA-Z]/g, function(c){
+                return String.fromCharCode((c<="Z"?90:122)>=(c=c.charCodeAt(0)+13)?c:c-26);
+            });
+        }
+
+        function downloadResults() {
+            const timestamp = new Date().toLocaleString();
+            const timeUsed = INITIAL_TIME_SECONDS - timerSeconds;
+            const timeUsedMins = Math.floor(timeUsed / 60);
+            const timeUsedSecs = timeUsed % 60;
+
+            const rawData = {
+                student: studentData.name,
+                id: studentData.id,
+                score: score,
+                total: 30,
+                violations: violations,
+                reloads: reloads,
+                timeSpent: `${timeUsedMins}m ${timeUsedSecs}s`,
+                date: timestamp,
+                hash: Math.random().toString(36).substring(7)
+            };
+
+            const jsonString = JSON.stringify(rawData, null, 2);
+            const encrypted = encryptData(jsonString);
+            
+            const blob = new Blob([`--- SECURE QUIZ RESULTS ---\n\n${encrypted}\n\n--- END OF FILE ---`], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            
+            a.href = url;
+            a.download = `Result_${studentData.name.replace(/\s+/g, '_')}_${studentData.id}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
