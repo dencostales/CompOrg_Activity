@@ -3,300 +3,258 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Computer Organization Quiz</title>
+    <title>Module 4: System Interconnects - Rapid Quiz</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease; }
-        .tab-violation { background-color: #fee2e2; filter: blur(2px); pointer-events: none; }
-        .timer-warning { color: #ef4444; animation: pulse 1s infinite; }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        .timer-critical { color: #ef4444; animation: shake 0.2s infinite; }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            50% { transform: translateX(0); }
+            75% { transform: translateX(2px); }
+            100% { transform: translateX(0); }
         }
-        #violation-modal { backdrop-filter: blur(8px); }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col items-center p-4">
 
-    <!-- Violation Alert Overlay (Custom Message Box) -->
-    <div id="violation-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-slate-900/60">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center border-t-4 border-red-500">
-            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-            </div>
-            <h2 class="text-2xl font-bold text-slate-800 mb-2">Security Breach Detected</h2>
-            <p class="text-slate-600 mb-6">You left the exam screen. This incident has been recorded. To prevent cheating, the <strong>exam questions have been reshuffled</strong>.</p>
-            <button onclick="closeViolationModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors">
-                I Understand, Continue Exam
-            </button>
-        </div>
-    </div>
-
-    <!-- Header / Stats Bar -->
+    <!-- Header Stats -->
     <div id="stats-bar" class="w-full max-w-3xl bg-white shadow-sm rounded-xl p-4 mb-6 flex justify-between items-center sticky top-4 z-10 border border-slate-200">
         <div class="flex gap-4">
-            <div class="text-xs uppercase font-bold text-slate-500">Reloads: <span id="reload-count" class="text-red-600">0</span></div>
-            <div class="text-xs uppercase font-bold text-slate-500">Violations: <span id="violation-count" class="text-red-600">0</span></div>
+            <div class="text-[10px] uppercase font-bold text-slate-500">Reloads: <span id="reload-count" class="text-red-600">0</span></div>
+            <div class="text-[10px] uppercase font-bold text-slate-500">Violations: <span id="violation-count" class="text-red-600">0</span></div>
         </div>
         <div class="flex items-center gap-2">
-            <span class="text-xs uppercase font-bold text-slate-400">Time Remaining:</span>
-            <div id="timer" class="text-lg font-mono font-bold text-blue-600">20:00</div>
+            <span class="text-[10px] uppercase font-bold text-slate-400">Question Time:</span>
+            <div id="q-timer" class="text-lg font-mono font-bold text-blue-600">30s</div>
         </div>
     </div>
 
     <!-- Main Content Container -->
-    <main id="app-container" class="w-full max-w-3xl bg-white shadow-xl rounded-2xl p-8 border border-slate-100">
+    <main id="app-container" class="w-full max-w-3xl bg-white shadow-xl rounded-2xl p-6 sm:p-8 border border-slate-100">
         
         <!-- Welcome Screen -->
         <div id="setup-screen" class="space-y-6">
             <div class="text-center">
-                <h1 class="text-3xl font-bold text-slate-800">Final Assessment</h1>
-                <p class="text-slate-500 mt-2">Total Points: 30 | Time Limit: 20 Minutes</p>
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">Module 4 Rapid Assessment</h1>
+                <p class="text-slate-500 mt-2 text-sm sm:text-base">30 Items | 30 Seconds Per Question | No Backtracking</p>
             </div>
             
             <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-                    <input type="text" id="student-name" placeholder="John Doe" class="w-full p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Student ID</label>
-                    <input type="text" id="student-id" placeholder="24-UR-0001" class="w-full p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
+                <input type="text" id="student-name" placeholder="Full Name" class="w-full p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="text" id="student-id" placeholder="26-UR-0001" class="w-full p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 
-            <div class="bg-amber-50 border-l-4 border-amber-400 p-4 text-sm text-amber-800">
-                <p class="font-bold mb-1">Proctoring Rules:</p>
+            <div class="bg-red-50 border-l-4 border-red-400 p-4 text-xs sm:text-sm text-red-800">
+                <p class="font-bold mb-1">Strict Proctoring Rules:</p>
                 <ul class="list-disc ml-5 space-y-1">
-                    <li>Leaving the tab will trigger a violation alert and <strong>scramble your question order</strong>.</li>
-                    <li>Refreshing the page increments the Reload counter.</li>
-                    <li>The quiz auto-submits when the 20-minute timer hits zero.</li>
+                    <li>Each question expires after <strong>30 seconds</strong>.</li>
+                    <li>If time runs out, the question is skipped with 0 points.</li>
+                    <li>Tab switching or window blurring triggers an immediate <strong>Hard Refresh</strong>.</li>
                 </ul>
             </div>
 
             <button onclick="startQuiz()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98]">
-                Start Examination
+                Start Timed Assessment
             </button>
         </div>
 
         <!-- Quiz Screen -->
         <div id="quiz-screen" class="hidden">
             <div class="mb-6">
-                <div class="flex justify-between text-sm text-slate-400 mb-2">
-                    <span id="progress-text">Question 1 of 15</span>
-                    <span id="score-tracking">Current Score: 0/30</span>
+                <div class="flex justify-between text-[11px] text-slate-400 mb-2 uppercase font-bold tracking-wider">
+                    <span id="progress-text">Question 1 of 30</span>
+                    <span id="score-tracking">Points: 0 / 30</span>
                 </div>
                 <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                     <div id="progress-bar" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
                 </div>
             </div>
 
-            <div id="question-container" class="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <!-- Question will be injected here -->
+            <div id="question-container" class="min-h-[250px]">
+                <!-- Questions injected here -->
             </div>
 
-            <div class="mt-8 flex justify-between">
-                <button id="next-btn" onclick="handleNext()" class="ml-auto bg-slate-800 hover:bg-black text-white px-8 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50">
-                    Next Question
+            <div class="mt-8 flex">
+                <button id="next-btn" onclick="handleNext(false)" class="ml-auto bg-slate-800 hover:bg-black text-white px-10 py-3 rounded-lg font-semibold transition-all">
+                    Submit Answer
                 </button>
             </div>
         </div>
 
         <!-- Result Screen -->
         <div id="result-screen" class="hidden text-center space-y-6">
-            <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 text-green-600 rounded-full mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 text-green-600 rounded-full mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </div>
-            <h2 class="text-2xl font-bold text-slate-800">Examination Completed</h2>
-            <p class="text-slate-500">Your results have been processed and secured.</p>
+            <h2 class="text-2xl font-bold text-slate-800">Exam Finalized</h2>
             
             <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 grid grid-cols-2 gap-4 text-left">
-                <div>
-                    <p class="text-xs text-slate-400 uppercase font-bold">Raw Score</p>
-                    <p id="final-score" class="text-xl font-bold text-slate-800">0 / 30</p>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-400 uppercase font-bold">Accuracy</p>
-                    <p id="final-percent" class="text-xl font-bold text-slate-800">0%</p>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-400 uppercase font-bold">Violations</p>
-                    <p id="final-violations" class="text-xl font-bold text-red-500">0</p>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-400 uppercase font-bold">Reloads</p>
-                    <p id="final-reloads" class="text-xl font-bold text-slate-800">0</p>
-                </div>
+                <div><p class="text-[10px] text-slate-400 uppercase font-bold">Score</p><p id="final-score" class="text-xl font-bold">0 / 30</p></div>
+                <div><p class="text-[10px] text-slate-400 uppercase font-bold">Grade</p><p id="final-percent" class="text-xl font-bold">0%</p></div>
+                <div><p class="text-[10px] text-slate-400 uppercase font-bold text-red-400">Security Flags</p><p id="final-violations" class="text-xl font-bold text-red-500">0</p></div>
+                <div><p class="text-[10px] text-slate-400 uppercase font-bold">Page Reloads</p><p id="final-reloads" class="text-xl font-bold">0</p></div>
             </div>
 
-            <div class="space-y-3 pt-4">
-                <button onclick="downloadResults()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                    Download Encrypted Results
-                </button>
-                <p class="text-xs text-slate-400 italic">Submit the downloaded file to your instructor for verification.</p>
-            </div>
+            <button onclick="downloadResults()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
+                Download Secure Result File
+            </button>
         </div>
     </main>
 
     <script>
-        // --- QUIZ DATA (15 Questions @ 2pts each = 30 pts) ---
-        let questions = [
-            { q: "What is the primary function of a Firewall?", a: ["Data Compression", "Security Filtering", "Power Management", "Hard Drive Storage"], correct: 1 },
-            { q: "Which protocol is used for secure web browsing?", a: ["HTTP", "FTP", "HTTPS", "SMTP"], correct: 2 },
-            { q: "What does RAM stand for?", a: ["Random Access Memory", "Read Always Mode", "Rapid Action Module", "Real-time Access Media"], correct: 0 },
-            { q: "In programming, what is a 'Bug'?", a: ["A physical insect", "An error in code", "A hardware feature", "A virus"], correct: 1 },
-            { q: "Which company developed the Java language?", a: ["Microsoft", "Apple", "Sun Microsystems", "Google"], correct: 2 },
-            { q: "What is the brain of the computer?", a: ["GPU", "RAM", "CPU", "Motherboard"], correct: 2 },
-            { q: "Which is a valid IPv4 address?", a: ["192.168.1.1", "256.0.0.1", "10.10.10.256", "1.2.3.4.5"], correct: 0 },
-            { q: "HTML is used for...", a: ["Styling", "Data processing", "Structure of web pages", "Server logic"], correct: 2 },
-            { q: "What does SQL stand for?", a: ["Simple Query Language", "Structured Query Language", "Secure Quick Link", "System Quality Logic"], correct: 1 },
-            { q: "Which of these is an Operating System?", a: ["Chrome", "Python", "Linux", "Visual Studio"], correct: 2 },
-            { q: "What is 2 + 2 in binary?", a: ["10", "11", "100", "01"], correct: 2 },
-            { q: "Which tag is used for the largest heading in HTML?", a: ["<head>", "<h6>", "<heading>", "<h1>"], correct: 3 },
-            { q: "What is 'Phishing'?", a: ["Catching data packets", "Social engineering to steal info", "Speeding up a network", "Encrypting a file"], correct: 1 },
-            { q: "A kilobyte is equal to how many bytes?", a: ["100", "1000", "1024", "512"], correct: 2 },
-            { q: "What does CPU stand for?", a: ["Central Process Unit", "Core Processing Utility", "Central Processing Unit", "Computer Power User"], correct: 2 }
+        const originalQuestions = [
+            { q: "What provide the physical and logical pathways for data and control signals between CPU, Memory, and I/O?", a: ["Internal Registers", "System Interconnects", "Primary Storage", "ALU Modules"], correct: 1 },
+            { q: "Which bottleneck occurs because instructions and data share the same bus in Von Neumann architecture?", a: ["Memory Overload", "Instruction Lag", "Von Neumann Bottleneck", "Latency Overflow"], correct: 2 },
+            { q: "Interconnect design is described as the art of reducing the impact of this inherent architecture limitation?", "a": ["Power consumption", "Clock speed gap", "Von Neumann Bottleneck", "Hardware cost"], correct: 2 },
+            { q: "A bus is primarily characterized as what kind of medium?", a: ["Point-to-Point", "Broadcast Medium", "Serial Only", "Dedicated Circuit"], correct: 1 },
+            { q: "What is a major advantage of using a Bus structure over Point-to-Point connections?", a: ["Increased speed", "Lower cost and standardization", "Private data lines", "Zero latency"], correct: 1 },
+            { q: "If a system has 6 components, how many cables are needed for the 'Spaghetti' (Point-to-Point) method?", a: ["6", "15", "30", "12"], correct: 1 },
+            { q: "Which bus specified the source or destination of the data being moved?", a: ["Data Bus", "Control Bus", "Address Bus", "Expansion Bus"], correct: 2 },
+            { q: "If a data bus is 64 bits wide, how many bits can it transfer in one cycle?", a: ["32 bits", "64 bits", "128 bits", "8 bits"], correct: 1 },
+            { q: "Is the Address Bus typically unidirectional or bidirectional?", a: ["Bidirectional", "Unidirectional", "Multidirectional", "Semi-directional"], correct: 1 },
+            { q: "Which functional group includes signals like 'Memory Write' and 'Interrupt Request'?", a: ["Address Bus", "Data Bus", "Control Bus", "Internal Bus"], correct: 2 },
+            { q: "What connects internal components of the CPU like Registers to the ALU?", a: ["System Bus", "Internal Bus", "Expansion Bus", "Local Bus"], correct: 1 },
+            { q: "A modern PC uses a hierarchy of buses to prevent slow I/O devices from doing what?", a: ["Drawing too much power", "Stalling CPU-Memory communication", "Corrupting registers", "Increasing bus skew"], correct: 1 },
+            { q: "Which classification uses permanent functional assignments for lines (e.g., separate Address and Data lines)?", a: ["Multiplexed", "Distributed", "Dedicated", "Polling"], correct: 2 },
+            { q: "What is a disadvantage of Multiplexed lines?", a: ["Increased pin count", "Higher cost", "Complex circuitry and slower performance", "Larger package size"], correct: 2 },
+            { q: "Which device initiates a data transfer on the bus?", a: ["Slave", "Master", "Controller", "Arbiter"], correct: 1 },
+            { q: "What is the final phase of a typical bus transaction protocol?", a: ["Arbitration", "Addressing", "Data Phase", "Acknowledgment"], correct: 3 },
+            { q: "In Synchronous timing, all events are coordinated by what?", a: ["Handshaking", "A Central Clock", "Wait States", "Physical location"], correct: 1 },
+            { q: "Which timing method uses 'Ready' and 'Acknowledge' signals instead of a clock?", a: ["Synchronous", "Asynchronous", "Semi-synchronous", "Daisy Chaining"], correct: 1 },
+            { q: "What is a 'Wait State' used for in semi-synchronous timing?", a: ["Speeding up the CPU", "Stopping the clock", "Extending the bus cycle for slow slaves", "Requesting the bus"], correct: 2 },
+            { q: "What is the process of deciding which Master gets control of the bus?", a: ["Timing", "Synchronization", "Arbitration", "Polling"], correct: 2 },
+            { q: "Which arbitration technique is limited by physical location, leading to possible 'starvation'?", a: ["Daisy Chaining", "Polling", "Independent Request/Grant", "Distributed"], correct: 0 },
+            { q: "Which technique is common in multi-processor systems where no single 'owner' exists?", a: ["Centralized Polling", "Independent Grant", "Distributed Arbitration", "Direct Memory Access"], correct: 2 },
+            { q: "In Independent Request/Grant, how many extra lines are needed for 10 masters?", a: ["10", "20", "5", "45"], correct: 1 },
+            { q: "What term describes signals on different lines of the same bus arriving at different times?", a: ["Latency", "Propagation Delay", "Bus Skew", "Interference"], correct: 2 },
+            { q: "Theoretical Maximum Bandwidth is calculated by multiplying Width by what?", a: ["Voltage", "Frequency", "Latency", "Distance"], correct: 1 },
+            { q: "Modern interconnects like PCIe use what type of high-speed links?", a: ["Parallel Bus", "Serial Point-to-Point", "Synchronous Broadcast", "Daisy Chain"], correct: 1 },
+            { q: "In PCIe, what is a 'Lane' composed of?", a: ["A single wire", "A pair of TX/RX wires", "64 address lines", "One control line"], correct: 1 },
+            { q: "Which PCIe layer handles error detection using CRC?", a: ["Physical Layer", "Transaction Layer", "Data Link Layer", "Transport Layer"], correct: 2 },
+            { q: "Which SoC internal bus standard is used for high-speed CPU and RAM communication?", a: ["AMBA APB", "AMBA AXI", "SATA 3.0", "PCIe Gen 5"], correct: 1 },
+            { q: "CALCULATION: Complexity for 21 computers using Point-to-Point method ($N(N-1)/2$)?", a: ["441", "210", "21", "42"], correct: 1 },
+            { q: "CALCULATION: Throughput for a 64-bit bus at 2.5 GHz ($8 bytes \\times 2.5 GHz$)?", a: ["10 GB/s", "16 GB/s", "20 GB/s", "5 GB/s"], correct: 2 }
         ];
 
-        // --- APP STATE ---
-        const INITIAL_TIME_SECONDS = 20 * 60; // 20 minutes
+        let questions = [...originalQuestions];
         let currentQuestion = 0;
         let score = 0;
         let violations = 0;
         let reloads = 0;
-        let timerSeconds = INITIAL_TIME_SECONDS;
-        let timerInterval;
+        let questionSeconds = 30;
+        let qTimerInterval;
         let isExamActive = false;
         let studentData = { name: '', id: '' };
+        let quizStartTime;
 
-        // --- UTILITIES ---
-        function shuffleQuestions(array) {
+        const reloadKey = 'm4_rapid_reload';
+        const violationKey = 'm4_rapid_violation';
+        
+        reloads = parseInt(localStorage.getItem(reloadKey) || '0');
+        violations = parseInt(localStorage.getItem(violationKey) || '0');
+
+        if (performance.navigation.type === 1) { 
+            reloads++; 
+            localStorage.setItem(reloadKey, reloads);
+        }
+
+        document.getElementById('reload-count').innerText = reloads;
+        document.getElementById('violation-count').innerText = violations;
+
+        function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [array[i], array[j]] = [array[j], array[i]];
             }
         }
 
-        // --- MONITORING LOGIC ---
-        
-        // Track reloads using localStorage
-        if (localStorage.getItem('quiz_reloads')) {
-            reloads = parseInt(localStorage.getItem('quiz_reloads')) + 1;
-        } else {
-            reloads = 0;
-        }
-        localStorage.setItem('quiz_reloads', reloads);
-        document.getElementById('reload-count').innerText = reloads;
-
-        // Detect Tab Switch / Window Blur
         window.onblur = function() {
             if (!isExamActive) return;
-
             violations++;
-            document.getElementById('violation-count').innerText = violations;
-            document.body.classList.add('tab-violation');
-            
-            // Trigger Reshuffle and Modal
-            shuffleQuestions(questions);
-            currentQuestion = 0; // Reset to question 1 of the new order
-            score = 0; // Reset progress score for security (optional punishment)
-            
-            document.getElementById('violation-modal').classList.remove('hidden');
+            localStorage.setItem(violationKey, violations);
+            alert("SECURITY ALERT: Screen exit detected.\n\nProgress wiped. Exam reset.\nClick OK to restart.");
+            location.reload();
         };
 
-        function closeViolationModal() {
-            document.body.classList.remove('tab-violation');
-            document.getElementById('violation-modal').classList.add('hidden');
-            renderQuestion();
-        }
-
-        // --- CORE FUNCTIONS ---
-
         function startQuiz() {
-            const name = document.getElementById('student-name').value;
-            const sid = document.getElementById('student-id').value;
+            const name = document.getElementById('student-name').value.trim();
+            const sid = document.getElementById('student-id').value.trim();
+            if (!name || !sid) return;
 
-            if (!name || !sid) {
-                alert("Please fill in your details.");
-                return;
-            }
-
-            studentData.name = name;
-            studentData.id = sid;
+            studentData = { name, id: sid };
             isExamActive = true;
-
+            quizStartTime = Date.now();
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('quiz-screen').classList.remove('hidden');
             
-            shuffleQuestions(questions); // Initial shuffle
-            startTimer();
+            shuffle(questions);
             renderQuestion();
         }
 
-        function startTimer() {
-            timerInterval = setInterval(() => {
-                timerSeconds--;
-                
-                const mins = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
-                const secs = String(timerSeconds % 60).padStart(2, '0');
-                const timerEl = document.getElementById('timer');
-                timerEl.innerText = `${mins}:${secs}`;
+        function startQuestionTimer() {
+            clearInterval(qTimerInterval);
+            questionSeconds = 30;
+            const timerEl = document.getElementById('q-timer');
+            timerEl.innerText = "30s";
+            timerEl.classList.remove('timer-critical');
 
-                if (timerSeconds <= 60) {
-                    timerEl.classList.add('timer-warning');
+            qTimerInterval = setInterval(() => {
+                questionSeconds--;
+                timerEl.innerText = `${questionSeconds}s`;
+
+                if (questionSeconds <= 5) {
+                    timerEl.classList.add('timer-critical');
                 }
 
-                if (timerSeconds <= 0) {
-                    clearInterval(timerInterval);
-                    finishQuiz();
+                if (questionSeconds <= 0) {
+                    clearInterval(qTimerInterval);
+                    handleNext(true); // Auto-skip flag true
                 }
             }, 1000);
         }
 
         function renderQuestion() {
-            const qData = questions[currentQuestion];
+            const q = questions[currentQuestion];
             const container = document.getElementById('question-container');
+            const prog = ((currentQuestion + 1) / questions.length) * 100;
             
-            // Update Progress
-            const progress = ((currentQuestion + 1) / questions.length) * 100;
-            document.getElementById('progress-bar').style.width = `${progress}%`;
-            document.getElementById('progress-text').innerText = `Question ${currentQuestion + 1} of ${questions.length}`;
-            document.getElementById('score-tracking').innerText = `Current Score: ${score}/30`;
+            document.getElementById('progress-bar').style.width = `${prog}%`;
+            document.getElementById('progress-text').innerText = `Question ${currentQuestion + 1} of 30`;
+            document.getElementById('score-tracking').innerText = `Points: ${score} / 30`;
 
             container.innerHTML = `
-                <h3 class="text-xl font-semibold text-slate-800 mb-6">${qData.q}</h3>
-                <div class="space-y-3">
-                    ${qData.a.map((option, idx) => `
-                        <label class="flex items-center p-4 border border-slate-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all group">
-                            <input type="radio" name="quiz-opt" value="${idx}" class="w-5 h-5 text-blue-600 border-slate-300 focus:ring-blue-500">
-                            <span class="ml-4 text-slate-700 group-hover:text-blue-800">${option}</span>
-                        </label>
-                    `).join('')}
+                <div class="animate-in fade-in slide-in-from-right-4 duration-300">
+                    <h3 class="text-lg font-bold text-slate-800 mb-6 leading-tight">${q.q}</h3>
+                    <div class="grid gap-3">
+                        ${q.a.map((opt, i) => `
+                            <label class="flex items-center p-4 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+                                <input type="radio" name="quiz-ans" value="${i}" class="w-5 h-5 text-blue-600">
+                                <span class="ml-4 text-slate-700">${opt}</span>
+                            </label>
+                        `).join('')}
+                    </div>
                 </div>
             `;
+            startQuestionTimer();
         }
 
-        function handleNext() {
-            const selected = document.querySelector('input[name="quiz-opt"]:checked');
-            if (!selected) {
-                alert("Please select an answer.");
-                return;
+        function handleNext(isAutoSkip) {
+            const sel = document.querySelector('input[name="quiz-ans"]:checked');
+            
+            if (!isAutoSkip && !sel) {
+                return; // User clicked submit without selecting
             }
 
-            if (parseInt(selected.value) === questions[currentQuestion].correct) {
-                score += 2;
+            if (sel && parseInt(sel.value) === questions[currentQuestion].correct) {
+                score++;
             }
 
             currentQuestion++;
-
             if (currentQuestion < questions.length) {
                 renderQuestion();
             } else {
@@ -306,60 +264,42 @@
 
         function finishQuiz() {
             isExamActive = false;
-            clearInterval(timerInterval);
+            clearInterval(qTimerInterval);
             document.getElementById('quiz-screen').classList.add('hidden');
             document.getElementById('result-screen').classList.remove('hidden');
             document.getElementById('stats-bar').classList.add('hidden');
-            document.getElementById('violation-modal').classList.add('hidden');
 
             document.getElementById('final-score').innerText = `${score} / 30`;
             document.getElementById('final-percent').innerText = `${Math.round((score/30)*100)}%`;
             document.getElementById('final-violations').innerText = violations;
             document.getElementById('final-reloads').innerText = reloads;
 
-            localStorage.removeItem('quiz_reloads');
-        }
-
-        // --- ENCRYPTION & EXPORT ---
-
-        function encryptData(text) {
-            const b64 = btoa(unescape(encodeURIComponent(text)));
-            return b64.replace(/[a-zA-Z]/g, function(c){
-                return String.fromCharCode((c<="Z"?90:122)>=(c=c.charCodeAt(0)+13)?c:c-26);
-            });
+            localStorage.removeItem(reloadKey);
+            localStorage.removeItem(violationKey);
         }
 
         function downloadResults() {
-            const timestamp = new Date().toLocaleString();
-            const timeUsed = INITIAL_TIME_SECONDS - timerSeconds;
-            const timeUsedMins = Math.floor(timeUsed / 60);
-            const timeUsedSecs = timeUsed % 60;
-
-            const rawData = {
+            const totalTime = Math.round((Date.now() - quizStartTime) / 1000);
+            const resultData = {
                 student: studentData.name,
                 id: studentData.id,
                 score: score,
-                total: 30,
                 violations: violations,
                 reloads: reloads,
-                timeSpent: `${timeUsedMins}m ${timeUsedSecs}s`,
-                date: timestamp,
-                hash: Math.random().toString(36).substring(7)
+                totalTimeSecs: totalTime,
+                completedAt: new Date().toLocaleString()
             };
 
-            const jsonString = JSON.stringify(rawData, null, 2);
-            const encrypted = encryptData(jsonString);
+            const json = JSON.stringify(resultData);
+            const b64 = btoa(unescape(encodeURIComponent(json)));
+            const encrypted = b64.replace(/[a-zA-Z]/g, c => String.fromCharCode((c<="Z"?90:122)>=(c=c.charCodeAt(0)+13)?c:c-26));
             
-            const blob = new Blob([`--- SECURE QUIZ RESULTS ---\n\n${encrypted}\n\n--- END OF FILE ---`], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
+            const blob = new Blob([`MODULE_4_RAPID_RESULT\n\n${encrypted}\n\nEOF`], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            
             a.href = url;
-            a.download = `Result_${studentData.name.replace(/\s+/g, '_')}_${studentData.id}.txt`;
-            document.body.appendChild(a);
+            a.download = `Rapid_M4_${studentData.name.replace(/\s+/g, '_')}.txt`;
             a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
         }
     </script>
 </body>
