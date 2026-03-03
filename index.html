@@ -8,15 +8,32 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease; }
-        .tab-violation { background-color: #fee2e2; }
+        .tab-violation { background-color: #fee2e2; filter: blur(2px); pointer-events: none; }
         .timer-warning { color: #ef4444; animation: pulse 1s infinite; }
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
         }
+        #violation-modal { backdrop-filter: blur(8px); }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col items-center p-4">
+
+    <!-- Violation Alert Overlay (Custom Message Box) -->
+    <div id="violation-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-slate-900/60">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center border-t-4 border-red-500">
+            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Security Breach Detected</h2>
+            <p class="text-slate-600 mb-6">You left the exam screen. This incident has been recorded. To prevent cheating, the <strong>exam questions have been reshuffled</strong>.</p>
+            <button onclick="closeViolationModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors">
+                I Understand, Continue Exam
+            </button>
+        </div>
+    </div>
 
     <!-- Header / Stats Bar -->
     <div id="stats-bar" class="w-full max-w-3xl bg-white shadow-sm rounded-xl p-4 mb-6 flex justify-between items-center sticky top-4 z-10 border border-slate-200">
@@ -52,12 +69,11 @@
             </div>
 
             <div class="bg-amber-50 border-l-4 border-amber-400 p-4 text-sm text-amber-800">
-                <p class="font-bold mb-1">Important Rules:</p>
+                <p class="font-bold mb-1">Proctoring Rules:</p>
                 <ul class="list-disc ml-5 space-y-1">
-                    <li>You have exactly 20 minutes to complete the quiz.</li>
-                    <li>Leaving the tab or opening other windows will be recorded as a violation.</li>
-                    <li>Refreshing the page will increment your reload counter.</li>
-                    <li>The quiz will auto-submit when the timer reaches zero.</li>
+                    <li>Leaving the tab will trigger a violation alert and <strong>scramble your question order</strong>.</li>
+                    <li>Refreshing the page increments the Reload counter.</li>
+                    <li>The quiz auto-submits when the 20-minute timer hits zero.</li>
                 </ul>
             </div>
 
@@ -132,7 +148,7 @@
 
     <script>
         // --- QUIZ DATA (15 Questions @ 2pts each = 30 pts) ---
-        const questions = [
+        let questions = [
             { q: "What is the primary function of a Firewall?", a: ["Data Compression", "Security Filtering", "Power Management", "Hard Drive Storage"], correct: 1 },
             { q: "Which protocol is used for secure web browsing?", a: ["HTTP", "FTP", "HTTPS", "SMTP"], correct: 2 },
             { q: "What does RAM stand for?", a: ["Random Access Memory", "Read Always Mode", "Rapid Action Module", "Real-time Access Media"], correct: 0 },
@@ -158,7 +174,16 @@
         let reloads = 0;
         let timerSeconds = INITIAL_TIME_SECONDS;
         let timerInterval;
+        let isExamActive = false;
         let studentData = { name: '', id: '' };
+
+        // --- UTILITIES ---
+        function shuffleQuestions(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
 
         // --- MONITORING LOGIC ---
         
@@ -173,15 +198,25 @@
 
         // Detect Tab Switch / Window Blur
         window.onblur = function() {
+            if (!isExamActive) return;
+
             violations++;
             document.getElementById('violation-count').innerText = violations;
             document.body.classList.add('tab-violation');
-            console.warn("Violation detected: User left the screen.");
+            
+            // Trigger Reshuffle and Modal
+            shuffleQuestions(questions);
+            currentQuestion = 0; // Reset to question 1 of the new order
+            score = 0; // Reset progress score for security (optional punishment)
+            
+            document.getElementById('violation-modal').classList.remove('hidden');
         };
 
-        window.onfocus = function() {
+        function closeViolationModal() {
             document.body.classList.remove('tab-violation');
-        };
+            document.getElementById('violation-modal').classList.add('hidden');
+            renderQuestion();
+        }
 
         // --- CORE FUNCTIONS ---
 
@@ -196,10 +231,12 @@
 
             studentData.name = name;
             studentData.id = sid;
+            isExamActive = true;
 
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('quiz-screen').classList.remove('hidden');
             
+            shuffleQuestions(questions); // Initial shuffle
             startTimer();
             renderQuestion();
         }
@@ -213,14 +250,12 @@
                 const timerEl = document.getElementById('timer');
                 timerEl.innerText = `${mins}:${secs}`;
 
-                // Add warning class when less than 1 minute remains
                 if (timerSeconds <= 60) {
                     timerEl.classList.add('timer-warning');
                 }
 
                 if (timerSeconds <= 0) {
                     clearInterval(timerInterval);
-                    alert("Time is up! Your quiz will now be submitted.");
                     finishQuiz();
                 }
             }, 1000);
@@ -256,7 +291,6 @@
                 return;
             }
 
-            // Calculate Score (each question is worth 2 points)
             if (parseInt(selected.value) === questions[currentQuestion].correct) {
                 score += 2;
             }
@@ -271,17 +305,18 @@
         }
 
         function finishQuiz() {
+            isExamActive = false;
             clearInterval(timerInterval);
             document.getElementById('quiz-screen').classList.add('hidden');
             document.getElementById('result-screen').classList.remove('hidden');
             document.getElementById('stats-bar').classList.add('hidden');
+            document.getElementById('violation-modal').classList.add('hidden');
 
             document.getElementById('final-score').innerText = `${score} / 30`;
             document.getElementById('final-percent').innerText = `${Math.round((score/30)*100)}%`;
             document.getElementById('final-violations').innerText = violations;
             document.getElementById('final-reloads').innerText = reloads;
 
-            // Clear reload tracking for next fresh attempt session
             localStorage.removeItem('quiz_reloads');
         }
 
