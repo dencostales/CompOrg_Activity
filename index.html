@@ -27,7 +27,7 @@
             <div class="text-[10px] uppercase font-bold text-slate-500">Violations: <span id="violation-count" class="text-red-600">0</span></div>
         </div>
         <div class="flex items-center gap-2">
-            <span class="text-[10px] uppercase font-bold text-slate-400">Question Time:</span>
+            <span class="text-[10px] uppercase font-bold text-slate-400">Time Left:</span>
             <div id="q-timer" class="text-lg font-mono font-bold text-blue-600">30s</div>
         </div>
     </div>
@@ -39,7 +39,7 @@
         <div id="setup-screen" class="space-y-6">
             <div class="text-center">
                 <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">Module 4 Rapid Assessment</h1>
-                <p class="text-slate-500 mt-2 text-sm sm:text-base">30 Items | 30 Seconds Per Question | No Backtracking</p>
+                <p class="text-slate-500 mt-2 text-sm sm:text-base">30 Items | 30s Per Question | Passing Score: 60% (18/30)</p>
             </div>
             
             <div class="space-y-4">
@@ -50,9 +50,9 @@
             <div class="bg-red-50 border-l-4 border-red-400 p-4 text-xs sm:text-sm text-red-800">
                 <p class="font-bold mb-1">Strict Proctoring Rules:</p>
                 <ul class="list-disc ml-5 space-y-1">
-                    <li>Each question expires after <strong>30 seconds</strong>.</li>
-                    <li>If time runs out, the question is skipped with 0 points.</li>
-                    <li>Tab switching or window blurring triggers an immediate <strong>Hard Refresh</strong>.</li>
+                    <li>Each question expires after <strong>30 seconds</strong>. It will auto-skip if unanswered.</li>
+                    <li>Tab switching or window blurring triggers an immediate <strong>Hard Reset</strong>.</li>
+                    <li>Download the encrypted result file at the end to turn in on Google Classroom.</li>
                 </ul>
             </div>
 
@@ -91,7 +91,10 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </div>
-            <h2 class="text-2xl font-bold text-slate-800">Exam Finalized</h2>
+            <div>
+                <h2 class="text-2xl font-bold text-slate-800">Exam Finalized</h2>
+                <p id="final-status" class="text-2xl font-black mt-1">PASSED</p>
+            </div>
             
             <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 grid grid-cols-2 gap-4 text-left">
                 <div><p class="text-[10px] text-slate-400 uppercase font-bold">Score</p><p id="final-score" class="text-xl font-bold">0 / 30</p></div>
@@ -100,9 +103,15 @@
                 <div><p class="text-[10px] text-slate-400 uppercase font-bold">Page Reloads</p><p id="final-reloads" class="text-xl font-bold">0</p></div>
             </div>
 
-            <button onclick="downloadResults()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
-                Download Secure Result File
-            </button>
+            <div class="pt-4 space-y-3">
+                <button onclick="downloadResults()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Download Submission File
+                </button>
+                <p class="text-xs text-slate-400 italic">Submit this file to Google Classroom for grading.</p>
+            </div>
         </div>
     </main>
 
@@ -137,7 +146,7 @@
             { q: "In PCIe, what is a 'Lane' composed of?", a: ["A single wire", "A pair of TX/RX wires", "64 address lines", "One control line"], correct: 1 },
             { q: "Which PCIe layer handles error detection using CRC?", a: ["Physical Layer", "Transaction Layer", "Data Link Layer", "Transport Layer"], correct: 2 },
             { q: "Which SoC internal bus standard is used for high-speed CPU and RAM communication?", a: ["AMBA APB", "AMBA AXI", "SATA 3.0", "PCIe Gen 5"], correct: 1 },
-            { q: "CALCULATION: Complexity for 21 computers using Point-to-Point method ($N(N-1)/2$)?", a: ["441", "210", "21", "42"], correct: 1 },
+            { q: "CALCULATION: Complexity for 21 computers using Point-to-Point method $N(N-1)/2$?", a: ["441", "210", "21", "42"], correct: 1 },
             { q: "CALCULATION: Throughput for a 64-bit bus at 2.5 GHz ($8 bytes \\times 2.5 GHz$)?", a: ["10 GB/s", "16 GB/s", "20 GB/s", "5 GB/s"], correct: 2 }
         ];
 
@@ -152,8 +161,8 @@
         let studentData = { name: '', id: '' };
         let quizStartTime;
 
-        const reloadKey = 'm4_rapid_reload';
-        const violationKey = 'm4_rapid_violation';
+        const reloadKey = 'm4_rapid_reload_v2';
+        const violationKey = 'm4_rapid_violation_v2';
         
         reloads = parseInt(localStorage.getItem(reloadKey) || '0');
         violations = parseInt(localStorage.getItem(violationKey) || '0');
@@ -177,14 +186,17 @@
             if (!isExamActive) return;
             violations++;
             localStorage.setItem(violationKey, violations);
-            alert("SECURITY ALERT: Screen exit detected.\n\nProgress wiped. Exam reset.\nClick OK to restart.");
+            alert("SECURITY VIOLATION: Tab switch or screen exit detected.\n\nYour current session has been terminated and progress wiped.\nClick OK to restart.");
             location.reload();
         };
 
         function startQuiz() {
             const name = document.getElementById('student-name').value.trim();
             const sid = document.getElementById('student-id').value.trim();
-            if (!name || !sid) return;
+            if (!name || !sid) {
+                alert("Please enter your name and ID.");
+                return;
+            }
 
             studentData = { name, id: sid };
             isExamActive = true;
@@ -213,7 +225,7 @@
 
                 if (questionSeconds <= 0) {
                     clearInterval(qTimerInterval);
-                    handleNext(true); // Auto-skip flag true
+                    handleNext(true); 
                 }
             }, 1000);
         }
@@ -247,7 +259,8 @@
             const sel = document.querySelector('input[name="quiz-ans"]:checked');
             
             if (!isAutoSkip && !sel) {
-                return; // User clicked submit without selecting
+                alert("Please select an option or wait for the timer to expire.");
+                return;
             }
 
             if (sel && parseInt(sel.value) === questions[currentQuestion].correct) {
@@ -269,10 +282,16 @@
             document.getElementById('result-screen').classList.remove('hidden');
             document.getElementById('stats-bar').classList.add('hidden');
 
+            const passed = score >= 18; // 60% threshold
+
             document.getElementById('final-score').innerText = `${score} / 30`;
             document.getElementById('final-percent').innerText = `${Math.round((score/30)*100)}%`;
             document.getElementById('final-violations').innerText = violations;
             document.getElementById('final-reloads').innerText = reloads;
+            
+            const statusEl = document.getElementById('final-status');
+            statusEl.innerText = passed ? 'PASSED' : 'FAILED';
+            statusEl.className = `text-2xl font-black mt-1 ${passed ? 'text-green-600' : 'text-red-600'}`;
 
             localStorage.removeItem(reloadKey);
             localStorage.removeItem(violationKey);
@@ -281,25 +300,37 @@
         function downloadResults() {
             const totalTime = Math.round((Date.now() - quizStartTime) / 1000);
             const resultData = {
-                student: studentData.name,
-                id: studentData.id,
-                score: score,
-                violations: violations,
-                reloads: reloads,
-                totalTimeSecs: totalTime,
-                completedAt: new Date().toLocaleString()
+                header: "SECURE_EXAM_RECORD_M4",
+                student_name: studentData.name,
+                student_id: studentData.id,
+                raw_score: score,
+                total_items: 30,
+                status: score >= 18 ? "PASSED" : "FAILED",
+                security_flags: {
+                    tab_violations: violations,
+                    page_reloads: reloads
+                },
+                time_taken: `${totalTime}s`,
+                completion_date: new Date().toISOString(),
+                verification_hash: Math.random().toString(36).substring(2, 15)
             };
 
+            // Encrypt logic: Stringify -> Base64 -> ROT13 (Scrambling)
             const json = JSON.stringify(resultData);
             const b64 = btoa(unescape(encodeURIComponent(json)));
             const encrypted = b64.replace(/[a-zA-Z]/g, c => String.fromCharCode((c<="Z"?90:122)>=(c=c.charCodeAt(0)+13)?c:c-26));
             
-            const blob = new Blob([`MODULE_4_RAPID_RESULT\n\n${encrypted}\n\nEOF`], { type: 'text/plain' });
+            const content = `--- MODULE 4 RAPID QUIZ SUBMISSION ---\n\nENCRYPTED_RESULT:\n${encrypted}\n\n--- END OF SECURE DATA ---`;
+            
+            const blob = new Blob([content], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Rapid_M4_${studentData.name.replace(/\s+/g, '_')}.txt`;
+            a.download = `Submission_M4_${studentData.name.replace(/\s+/g, '_')}_${studentData.id}.txt`;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
         }
     </script>
 </body>
